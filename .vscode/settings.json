@@ -1,0 +1,7 @@
+{
+    "files.associations": {
+        "agent_socket.h": "c",
+        "includes.h": "c",
+        "log.h": "c"
+    }
+}
