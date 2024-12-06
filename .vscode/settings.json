@@ -2,6 +2,18 @@
     "files.associations": {
         "agent_socket.h": "c",
         "includes.h": "c",
-        "log.h": "c"
+        "log.h": "c",
+        "capwap_message_element.h": "c",
+        "capwap.h": "c",
+        "capwap_control.h": "c",
+        "inet.h": "c",
+        "capwap_header.h": "c",
+        "capwap_preamble.h": "c",
+        "socket.h": "c",
+        "eloop.h": "c",
+        "common.h": "c",
+        "trace.h": "c",
+        "syslog.h": "c",
+        "endian.h": "c"
     }
 }

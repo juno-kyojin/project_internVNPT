@@ -1,18 +1,18 @@
-#include "capwap_message_element.h"
+#include "/home/tuitachi/project_internVNPT/libcapwap/include/capwap_message_element.h"
 #include <string.h>
 #include <arpa/inet.h>
 #include <stdio.h>
 
 size_t capwap_serialize_message_element(const CAPWAPMessageElement *element, uint8_t *buffer) {
-    // Chuyển type và length sang network byte order
+    // Convert type and length to network byte order
     uint16_t t = htons(element->type);
     uint16_t l = htons(element->length);
 
-    // Ghi type (2 bytes)
+    // Write type (2 bytes)
     memcpy(buffer, &t, 2);
-    // Ghi length (2 bytes)
+    // Write length (2 bytes)
     memcpy(buffer+2, &l, 2);
-    // Ghi value (length bytes)
+    // Write value (length bytes)
     memcpy(buffer+4, element->value, element->length);
 
     return 4 + element->length;
@@ -25,7 +25,7 @@ size_t capwap_deserialize_message_element(const uint8_t *buffer, CAPWAPMessageEl
 CAPWAPMessageElement* create_discovery_type_element(uint8_t discovery_type) {
     CAPWAPMessageElement *el = malloc(sizeof(*el));
     if (!el) return NULL;
-    el->type = 20; // Type cho Discovery Type
+    el->type = 20; // Type for Discovery Type
     el->length = 1;
     el->value = malloc(1);
     if (!el->value) {
@@ -36,7 +36,7 @@ CAPWAPMessageElement* create_discovery_type_element(uint8_t discovery_type) {
     return el;
 }
 
-// Hàm tạo Board Data Sub-Element
+// Function to create Board Data Sub-Element
 size_t create_board_data_sub_element(uint16_t type, const uint8_t *data, uint16_t data_length, uint8_t *buffer) {
     uint16_t type_net = htons(type);
     uint16_t length_net = htons(data_length);
@@ -49,13 +49,11 @@ size_t create_board_data_sub_element(uint16_t type, const uint8_t *data, uint16_
 }
 
 // WTP Board Data (Type 38)
-CAPWAPMessageElement* create_wtp_board_data_element(void) {
-    uint32_t vendor_id = htonl(1); // Vendor Identifier, khác 0
-    const char *model = "ModelX";   // WTP Model Number (Sub-Element Type 0)
-    const char *serial = "SN123456"; // WTP Serial Number (Sub-Element Type 1)
+CAPWAPMessageElement* create_wtp_board_data_element(const char *model, const char *serial) {
+    uint32_t vendor_id = htonl(1); // Vendor Identifier, not 0
 
-    // Tạo Board Data Sub-Elements
-    uint8_t sub_elements[1024]; // Kích thước tối đa 1024 bytes
+    // Create Board Data Sub-Elements
+    uint8_t sub_elements[1024]; // Maximum size of 1024 bytes
     size_t offset = 0;
 
     // WTP Model Number Sub-Element
@@ -64,10 +62,10 @@ CAPWAPMessageElement* create_wtp_board_data_element(void) {
     // WTP Serial Number Sub-Element
     offset += create_board_data_sub_element(1, (const uint8_t *)serial, strlen(serial), sub_elements + offset);
 
-    // Tổng độ dài: Vendor Identifier (4 bytes) + Sub-Elements
+    // Total length: Vendor Identifier (4 bytes) + Sub-Elements
     size_t total_length = 4 + offset;
 
-    // Tạo Message Element
+    // Create Message Element
     CAPWAPMessageElement *el = malloc(sizeof(*el));
     if (!el) return NULL;
 
@@ -99,12 +97,12 @@ CAPWAPMessageElement* create_wtp_descriptor_element(void) {
     if (!el) return NULL;
 
     el->type = 39; // WTP Descriptor
-    // Giả sử data là "HW1.0" (5 bytes), "SW1.0" (5 bytes), "BT1.0" (5 bytes)
-    // Dữ liệu WTP Descriptor phức tạp hơn, đây chỉ là ví dụ đơn giản:
+    // Assume data is "HW1.0" (5 bytes), "SW1.0" (5 bytes), "BT1.0" (5 bytes)
+    // WTP Descriptor data is more complex, this is a simple example:
     const char *hw="HW1.0";
     const char *sw="SW1.0";
     const char *bt="BT1.0";
-    // Giả sử ta gộp 3 chuỗi này vào value
+    // Assume we concatenate these 3 strings into value
     // length = 5+5+5 = 15 bytes
     el->length = 15;
     el->value = malloc(el->length);
@@ -130,7 +128,7 @@ CAPWAPMessageElement* create_wtp_frame_tunnel_mode_element(uint8_t mode) {
     return el;
 }
 
-// WTP MAC Type(44), length=1,val=0
+// WTP MAC Type(44), length=1, val=0
 CAPWAPMessageElement* create_wtp_mac_type_element(uint8_t mac_type) {
     CAPWAPMessageElement* el=malloc(sizeof(*el));
     el->type=44;
@@ -140,7 +138,7 @@ CAPWAPMessageElement* create_wtp_mac_type_element(uint8_t mac_type) {
     return el;
 }
 
-// WTP Radio Info(1048), length=5: [0x01][0x00,0x00,0x00,0x00]
+// WTP Radio Information(1048), length=5: [0x01][0x00,0x00,0x00,0x00]
 CAPWAPMessageElement* create_wtp_radio_info_element(void) {
     CAPWAPMessageElement* el=malloc(sizeof(*el));
     el->type=1048;
@@ -152,18 +150,18 @@ CAPWAPMessageElement* create_wtp_radio_info_element(void) {
 }
 
 CAPWAPMessageElement* create_ac_descriptor_element(void) {
-    // Giả lập dữ liệu cho AC Descriptor
-    uint16_t stations = htons(50); // Giả sử 50 trạm
-    uint16_t limit = htons(100); // Giới hạn 100 trạm
-    uint16_t active_wtps = htons(20); // 20 WTP đang hoạt động
-    uint16_t max_wtps = htons(50); // Hỗ trợ tối đa 50 WTP
-    uint8_t security = 0x22; // Hỗ trợ X.509
-    uint8_t r_mac_field = 1; // Hỗ trợ Radio MAC Address
+    // Simulate data for AC Descriptor
+    uint16_t stations = htons(50); // Assume 50 stations
+    uint16_t limit = htons(100); // Limit 100 stations
+    uint16_t active_wtps = htons(20); // 20 active WTPs
+    uint16_t max_wtps = htons(50); // Supports up to 50 WTPs
+    uint8_t security = 0x22; // Supports X.509
+    uint8_t r_mac_field = 1; // Supports Radio MAC Address
     uint8_t reserved1 = 0;
-    uint8_t dtls_policy = 0x03; // Hỗ trợ DTLS và clear text
+    uint8_t dtls_policy = 0x03; // Supports DTLS and clear text
 
-    // Tạo Message Element
-    size_t data_length = 12; // Độ dài của dữ liệu
+    // Create Message Element
+    size_t data_length = 12; // Data length
     CAPWAPMessageElement *el = malloc(sizeof(*el));
     if (!el) return NULL;
     el->type = 1; // AC Descriptor
@@ -173,7 +171,7 @@ CAPWAPMessageElement* create_ac_descriptor_element(void) {
         free(el);
         return NULL;
     }
-    // Copy dữ liệu vào value
+    // Copy data into value
     memcpy(el->value, &stations, 2);
     memcpy(el->value + 2, &limit, 2);
     memcpy(el->value + 4, &active_wtps, 2);
@@ -187,7 +185,7 @@ CAPWAPMessageElement* create_ac_descriptor_element(void) {
 
 // AC Name (Type 4)
 CAPWAPMessageElement* create_ac_name_element(const char *ac_name) {
-    // Tạo Message Element
+    // Create Message Element
     CAPWAPMessageElement *el = malloc(sizeof(*el));
     if (!el) return NULL;
     el->type = 4; // AC Name
@@ -203,12 +201,12 @@ CAPWAPMessageElement* create_ac_name_element(const char *ac_name) {
 
 // CAPWAP Control IPv4 Address (Type 10)
 CAPWAPMessageElement* create_capwap_control_ipv4_address_element(uint16_t wtp_count) {
-    // Giả lập dữ liệu cho CAPWAP Control IPv4 Address
-    uint32_t ipv4_address = inet_addr("192.168.1.100"); // Thay thế bằng địa chỉ IP thực tế
+    // Simulate data for CAPWAP Control IPv4 Address
+    uint32_t ipv4_address = inet_addr("192.168.1.100"); // Replace with actual IP address
     uint16_t wtp_count_net = htons(wtp_count);
 
-    // Tạo Message Element
-    size_t data_length = 6; // Độ dài của dữ liệu
+    // Create Message Element
+    size_t data_length = 6; // Data length
     CAPWAPMessageElement *el = malloc(sizeof(*el));
     if (!el) return NULL;
     el->type = 10; // CAPWAP Control IPv4 Address
@@ -218,7 +216,7 @@ CAPWAPMessageElement* create_capwap_control_ipv4_address_element(uint16_t wtp_co
         free(el);
         return NULL;
     }
-    // Copy dữ liệu vào value
+    // Copy data into value
     memcpy(el->value, &ipv4_address, 4);
     memcpy(el->value + 4, &wtp_count_net, 2);
 

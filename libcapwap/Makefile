@@ -1,43 +1,40 @@
 CC = gcc
-CFLAGS = -Wall -Iinclude
-AR = ar
-ARFLAGS = rcs
+CFLAGS = -Wall -Wextra -O2
+LDFLAGS = -lm
 
-LIBNAME = libcapwap.a
-TEST_NAME = test_discovery_request
 SRC_DIR = src
-INCLUDE_DIR = include
-TEST_DIR = tests
 OBJ_DIR = obj
 BIN_DIR = bin
 
-LIB_SOURCES = capwap.c capwap_control.c capwap_header.c capwap_message_element.c capwap_preamble.c
-LIB_SRCS = $(patsubst %,$(SRC_DIR)/%,$(LIB_SOURCES))
-LIB_OBJS = $(patsubst $(SRC_DIR)/%.c,$(OBJ_DIR)/%.o,$(LIB_SRCS))
+TARGET = $(BIN_DIR)/libcapwap.a
 
-TEST_SRC = $(TEST_DIR)/$(TEST_NAME).c
-TEST_OBJ = $(TEST_DIR)/$(TEST_NAME).o
+SRC_FILES = $(wildcard $(SRC_DIR)/*.c)
+OBJ_FILES = $(patsubst $(SRC_DIR)/%.c, $(OBJ_DIR)/%.o, $(SRC_FILES))
 
-.PHONY: all clean
-all: $(LIBNAME) $(BIN_DIR)/$(TEST_NAME)
+AC_LISTENER = $(BIN_DIR)/ac_listener
+WTP_SENDER = $(BIN_DIR)/wtp_sender
 
-$(OBJ_DIR):
-	mkdir -p $(OBJ_DIR)
+AC_LISTENER_SRC = tests/ac_listener.c
+WTP_SENDER_SRC = tests/wtp_sender.c
 
-$(BIN_DIR):
-	mkdir -p $(BIN_DIR)
+all: $(TARGET) $(AC_LISTENER) $(WTP_SENDER)
 
-$(OBJ_DIR)/%.o: $(SRC_DIR)/%.c | $(OBJ_DIR)
+$(TARGET): $(OBJ_FILES)
+	@mkdir -p $(BIN_DIR)
+	ar rcs $@ $^
+
+# Compile test executables and link with libcapwap.a
+$(AC_LISTENER): $(AC_LISTENER_SRC) $(TARGET)
+	$(CC) $(CFLAGS) $< -o $@ -L$(BIN_DIR) -lcapwap $(LDFLAGS)
+
+$(WTP_SENDER): $(WTP_SENDER_SRC) $(TARGET)
+	$(CC) $(CFLAGS) $< -o $@ -L$(BIN_DIR) -lcapwap $(LDFLAGS)
+
+$(OBJ_DIR)/%.o: $(SRC_DIR)/%.c
+	@mkdir -p $(OBJ_DIR)
 	$(CC) $(CFLAGS) -c $< -o $@
-
-$(LIBNAME): $(LIB_OBJS)
-	$(AR) $(ARFLAGS) $@ $^
-
-$(TEST_DIR)/%.o: $(TEST_DIR)/%.c
-	$(CC) $(CFLAGS) -c $< -o $@
-
-$(BIN_DIR)/$(TEST_NAME): $(TEST_OBJ) $(LIBNAME) | $(BIN_DIR)
-	$(CC) $(CFLAGS) $< -L. -lcapwap -o $@
 
 clean:
-	rm -f $(OBJ_DIR)/*.o $(LIBNAME) $(TEST_DIR)/*.o $(BIN_DIR)/$(TEST_NAME)
+	rm -rf $(OBJ_DIR) $(BIN_DIR)
+
+.PHONY: all clean

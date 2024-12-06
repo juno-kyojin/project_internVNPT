@@ -22,7 +22,7 @@ typedef struct {
     uint16_t frag_offset_reserved;
 } CAPWAPHeader;
 
-// Hàm serialize và deserialize cho CAPWAPHeader
+// Functions to serialize and deserialize CAPWAPHeader
 size_t capwap_serialize_header(const CAPWAPHeader *header, uint8_t *buffer);
 int capwap_deserialize_header(const uint8_t *buffer, CAPWAPHeader *header);
 

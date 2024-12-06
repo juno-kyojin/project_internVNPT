@@ -6,10 +6,10 @@
 // CAPWAP Preamble Struct
 typedef struct {
     uint8_t version : 4; // Version (4 bits)
-    uint8_t type : 4;    // Payload Type (4 bits), phải đặt thành 0 cho Control messages
+    uint8_t type : 4;    // Payload Type (4 bits), = 0 for Control messages
 } CAPWAPPreamble;
 
-// Hàm serialize và deserialize cho CAPWAPPreamble
+// Functions to serialize and deserialize CAPWAPPreamble
 size_t capwap_serialize_preamble(const CAPWAPPreamble *preamble, uint8_t *buffer);
 int capwap_deserialize_preamble(const uint8_t *buffer, CAPWAPPreamble *preamble);
 

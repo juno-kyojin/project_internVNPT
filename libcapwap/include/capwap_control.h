@@ -11,7 +11,7 @@ typedef struct {
     uint8_t flags;            // Flags (1 byte)
 } CAPWAPControlHeader;
 
-// Hàm serialize và deserialize cho CAPWAPControlHeader
+// Functions to serialize and deserialize CAPWAPControlHeader
 size_t capwap_serialize_control_header(const CAPWAPControlHeader *control_header, uint8_t *buffer);
 int capwap_deserialize_control_header(const uint8_t *buffer, CAPWAPControlHeader *control_header);
 

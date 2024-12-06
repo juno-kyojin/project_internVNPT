@@ -1,8 +1,8 @@
-#include "capwap.h"
-#include "capwap_control.h"
-#include "capwap_header.h"
-#include "capwap_preamble.h"
-#include "capwap_message_element.h"
+#include "/home/tuitachi/project_internVNPT/libcapwap/include/capwap.h"
+#include "/home/tuitachi/project_internVNPT/libcapwap/include/capwap_control.h"
+#include "/home/tuitachi/project_internVNPT/libcapwap/src/capwap_header.c"
+#include "/home/tuitachi/project_internVNPT/libcapwap/include/capwap_preamble.h"
+#include "/home/tuitachi/project_internVNPT/libcapwap/include/capwap_message_element.h"
 #include <string.h>
 #include <arpa/inet.h>
 #include <stdio.h>
@@ -24,7 +24,7 @@ void send_udp_packet(int sockfd, const uint8_t *buffer, size_t buffer_size, cons
     }
 }
 
-size_t capwap_build_discovery_request(uint8_t *buffer, size_t buffer_size) {
+size_t capwap_build_discovery_request(uint8_t *buffer, size_t buffer_size, const char *wtp_model, const char *wtp_serial) {
     size_t offset = 0;
 
     CAPWAPPreamble preamble = {CAPWAP_VERSION, 0};
@@ -38,7 +38,7 @@ size_t capwap_build_discovery_request(uint8_t *buffer, size_t buffer_size) {
     header.wbid = CAPWAP_WBID_IEEE_802_11;
     offset += capwap_serialize_header(&header, buffer + offset);
 
-    // Tạo tiêu đề điều khiển
+    // Create control header
     CAPWAPControlHeader ch = {0};
     ch.message_type = 1; // Discovery Request
     ch.seq_num = 0;
@@ -47,9 +47,9 @@ size_t capwap_build_discovery_request(uint8_t *buffer, size_t buffer_size) {
     size_t ch_offset = offset;
     offset += capwap_serialize_control_header(&ch, buffer + offset);
 
-    // Tạo các Message Element
+    // Create Message Elements
     CAPWAPMessageElement* dt_el = create_discovery_type_element(2);
-    CAPWAPMessageElement* wb_el = create_wtp_board_data_element();
+    CAPWAPMessageElement* wb_el = create_wtp_board_data_element(wtp_model, wtp_serial);
 
     size_t elements_start = offset;
 
@@ -61,23 +61,24 @@ size_t capwap_build_discovery_request(uint8_t *buffer, size_t buffer_size) {
     size_t elements_len = offset - elements_start;
     ch.message_length = (uint16_t)elements_len;
 
-    // Tuần tự hóa lại tiêu đề điều khiển vào buffer
+    // Serialize the control header back into the buffer
     capwap_serialize_control_header(&ch, buffer + ch_offset);
 
-    // Giải phóng bộ nhớ
+    // Free memory
     free(dt_el->value); free(dt_el);
     free(wb_el->value); free(wb_el);
 
     return offset;
 }
-size_t capwap_build_discovery_response(uint8_t *buffer, size_t buffer_size) {
+
+size_t capwap_build_discovery_response(uint8_t *buffer, size_t buffer_size, const char *ac_name, uint16_t wtp_count) {
     size_t offset = 0;
 
-    // Khởi tạo CAPWAPPreamble
+    // Initialize CAPWAPPreamble
     CAPWAPPreamble preamble = {CAPWAP_VERSION, 0}; // Control message
     offset += capwap_serialize_preamble(&preamble, buffer + offset);
 
-    // Khởi tạo CAPWAPHeader
+    // Initialize CAPWAPHeader
     CAPWAPHeader header = {0};
     header.version = CAPWAP_VERSION;
     header.type = 0; // 802.3 frame
@@ -86,36 +87,36 @@ size_t capwap_build_discovery_response(uint8_t *buffer, size_t buffer_size) {
     header.wbid = CAPWAP_WBID_IEEE_802_11;
     offset += capwap_serialize_header(&header, buffer + offset);
 
-    // Tạo CAPWAPControlHeader
+    // Create CAPWAPControlHeader
     CAPWAPControlHeader ch = {0};
     ch.message_type = 2; // Discovery Response
-    ch.seq_num = 0; // Giả sử seq_num = 0
-    ch.message_length = 0; // Cập nhật sau khi thêm Message Elements
+    ch.seq_num = 0; // Assume seq_num = 0
+    ch.message_length = 0; // Update after adding Message Elements
     ch.flags = 0;
-    size_t ch_offset = offset; // Lưu vị trí offset hiện tại
+    size_t ch_offset = offset; // Save current offset position
     offset += capwap_serialize_control_header(&ch, buffer + offset);
 
-    // Tạo các Message Elements
+    // Create Message Elements
     CAPWAPMessageElement *ac_descriptor_el = create_ac_descriptor_element();
-    CAPWAPMessageElement *ac_name_el = create_ac_name_element("AC_Name"); // Thay thế bằng tên AC thực tế
+    CAPWAPMessageElement *ac_name_el = create_ac_name_element(ac_name);
     CAPWAPMessageElement *wtp_radio_info_el = create_wtp_radio_info_element();
-    CAPWAPMessageElement *capwap_control_ipv4_addr_el = create_capwap_control_ipv4_address_element(100); // Thay thế bằng số WTP kết nối thực tế
+    CAPWAPMessageElement *capwap_control_ipv4_addr_el = create_capwap_control_ipv4_address_element(wtp_count);
 
-    // Lưu vị trí bắt đầu của các Message Elements
+    // Save the start position of Message Elements
     size_t elements_start = offset;
 
-    // Tuần tự hóa các Message Element vào buffer
+    // Serialize Message Elements into buffer
     offset += capwap_serialize_message_element(ac_descriptor_el, buffer + offset);
     offset += capwap_serialize_message_element(ac_name_el, buffer + offset);
     offset += capwap_serialize_message_element(wtp_radio_info_el, buffer + offset);
     offset += capwap_serialize_message_element(capwap_control_ipv4_addr_el, buffer + offset);
 
-    // Cập nhật message_length trong CAPWAPControlHeader
+    // Update message_length in CAPWAPControlHeader
     size_t elements_len = offset - elements_start;
     ch.message_length = (uint16_t)elements_len;
-    capwap_serialize_control_header(&ch, buffer + ch_offset); // Ghi lại CAPWAPControlHeader
+    capwap_serialize_control_header(&ch, buffer + ch_offset); // Write back CAPWAPControlHeader
 
-    // Giải phóng bộ nhớ
+    // Free memory
     free(ac_descriptor_el->value);
     free(ac_descriptor_el);
     free(ac_name_el->value);
