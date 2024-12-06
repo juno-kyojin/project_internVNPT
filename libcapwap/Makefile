@@ -25,10 +25,10 @@ $(TARGET): $(OBJ_FILES)
 
 # Compile test executables and link with libcapwap.a
 $(AC_LISTENER): $(AC_LISTENER_SRC) $(TARGET)
-	$(CC) $(CFLAGS) $< -o $@ -L$(BIN_DIR) -lcapwap $(LDFLAGS)
+	$(CC) $(CFLAGS) $< -o $@ -L$(BIN_DIR) -lcapwap -L/home/tuitachi/hust082022/lib/libeventloop/src/obj -leloop $(LDFLAGS)
 
 $(WTP_SENDER): $(WTP_SENDER_SRC) $(TARGET)
-	$(CC) $(CFLAGS) $< -o $@ -L$(BIN_DIR) -lcapwap $(LDFLAGS)
+	$(CC) $(CFLAGS) $< -o $@ -L$(BIN_DIR) -lcapwap -L/home/tuitachi/hust082022/lib/libeventloop/src/obj -leloop $(LDFLAGS)
 
 $(OBJ_DIR)/%.o: $(SRC_DIR)/%.c
 	@mkdir -p $(OBJ_DIR)
