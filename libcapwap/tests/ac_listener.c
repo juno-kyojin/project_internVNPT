@@ -46,9 +46,7 @@ static void handle_sock_read(int sock, void *eloop_ctx, void *sock_ctx) {
     send_udp_packet(sock, buffer, response_len, inet_ntoa(client_addr.sin_addr), ntohs(client_addr.sin_port));
     printf("Sent Discovery Response to %s:%d\n", inet_ntoa(client_addr.sin_addr), ntohs(client_addr.sin_port));
 
-    // Giải phóng bộ nhớ đã cấp phát bởi capwap_build_discovery_response nếu cần
-    // Ví dụ: nếu capwap_build_discovery_response cấp phát bộ nhớ động, hãy giải phóng ở đây
-    // free(response_buffer); // Thay thế 'response_buffer' bằng biến phù hợp
+
 }
 
 // Hàm xử lý tín hiệu
