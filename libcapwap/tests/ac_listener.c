@@ -11,11 +11,12 @@
 #include <unistd.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
+#include <signal.h>
 
 #define LISTEN_PORT 5246
 #define BUFFER_SIZE CAPWAP_MAX_PACKET_SIZE
 
-// Hàm xử lý sự kiện đọc socket
+// Function to handle socket read events
 static void handle_sock_read(int sock, void *eloop_ctx, void *sock_ctx) {
     struct sockaddr_in client_addr;
     socklen_t addr_len = sizeof(client_addr);
@@ -24,25 +25,37 @@ static void handle_sock_read(int sock, void *eloop_ctx, void *sock_ctx) {
     const char *ac_name = "VNPT_AC";
     uint16_t wtp_count = 25;
 
-    // Nhận gói tin Discovery Request từ WTP
+    // Receive Discovery Request from WTP
     recv_len = recvfrom(sock, buffer, BUFFER_SIZE, 0, (struct sockaddr *)&client_addr, &addr_len);
     if (recv_len < 0) {
-        perror("recvfrom thất bại");
+        perror("recvfrom failed");
         return;
     }
+    
 
-    printf("Nhận được Discovery Request từ %s:%d\n", inet_ntoa(client_addr.sin_addr), ntohs(client_addr.sin_port));
+    printf("Received Discovery Request from %s:%d\n", inet_ntoa(client_addr.sin_addr), ntohs(client_addr.sin_port));
 
-    // Xây dựng Discovery Response
+    // Build Discovery Response
     size_t response_len = capwap_build_discovery_response(buffer, BUFFER_SIZE, ac_name, wtp_count);
     if (response_len == 0) {
-        fprintf(stderr, "Không thể xây dựng Discovery Response\n");
+        fprintf(stderr, "Cannot build Discovery Response\n");
         return;
     }
 
-    // Gửi Discovery Response về WTP
+    // Send Discovery Response to WTP
     send_udp_packet(sock, buffer, response_len, inet_ntoa(client_addr.sin_addr), ntohs(client_addr.sin_port));
-    printf("Đã gửi Discovery Response tới %s:%d\n", inet_ntoa(client_addr.sin_addr), ntohs(client_addr.sin_port));
+    printf("Sent Discovery Response to %s:%d\n", inet_ntoa(client_addr.sin_addr), ntohs(client_addr.sin_port));
+
+    // Giải phóng bộ nhớ đã cấp phát bởi capwap_build_discovery_response nếu cần
+    // Ví dụ: nếu capwap_build_discovery_response cấp phát bộ nhớ động, hãy giải phóng ở đây
+    // free(response_buffer); // Thay thế 'response_buffer' bằng biến phù hợp
+}
+
+// Hàm xử lý tín hiệu
+static void handle_signal(int sig) {
+    if (sig == SIGINT) {
+        eloop_terminate();
+    }
 }
 
 int main() {
@@ -51,7 +64,7 @@ int main() {
 
     // Tạo socket UDP
     if ((sockfd = socket(AF_INET, SOCK_DGRAM, 0)) < 0) {
-        perror("Không thể tạo socket");
+        perror("Cannot create socket");
         exit(EXIT_FAILURE);
     }
 
@@ -63,7 +76,7 @@ int main() {
 
     // Bind socket với địa chỉ và cổng
     if (bind(sockfd, (struct sockaddr *)&server_addr, sizeof(server_addr)) < 0) {
-        perror("Bind socket thất bại");
+        perror("Bind socket failed");
         close(sockfd);
         exit(EXIT_FAILURE);
     }
@@ -71,15 +84,18 @@ int main() {
     // Khởi tạo eloop
     eloop_init();
 
+    // Đăng ký signal handler
+    signal(SIGINT, handle_signal);
+
     // Đăng ký socket với eloop
     eloop_register_read_sock(sockfd, handle_sock_read, NULL, NULL);
 
-    printf("AC Listener đang chạy trên cổng %d...\n", LISTEN_PORT);
+    printf("AC Listener running on port %d...\n", LISTEN_PORT);
 
     // Chạy eloop
     eloop_run();
 
-    // Giải phóng eloop
+    // Hủy eloop
     eloop_destroy();
 
     close(sockfd);

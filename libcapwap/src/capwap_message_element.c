@@ -189,7 +189,7 @@ CAPWAPMessageElement* create_ac_name_element(const char *ac_name) {
     CAPWAPMessageElement *el = malloc(sizeof(*el));
     if (!el) return NULL;
     el->type = 4; // AC Name
-    el->length = strlen(ac_name);
+    el->length = strlen(ac_name) + 1;
     el->value = malloc(el->length);
     if (!el->value) {
         free(el);
